@@ -113,7 +113,14 @@ function bindConnection(conn) {
   }
   connection = conn
   remotePeerId = conn.peer
+  const connectTimer = setTimeout(() => {
+    if (connection !== conn || conn.open) return
+    connection = null
+    conn.close()
+    showDisconnectedState('连接超时，请重试')
+  }, 15000)
   conn.on('open', () => {
+    clearTimeout(connectTimer)
     els.hostCard.hidden = true
     els.shareCard.hidden = true
     els.joinCard.hidden = true
@@ -136,11 +143,13 @@ function bindConnection(conn) {
     if (text) addMessage('them', text)
   })
   conn.on('close', () => {
+    clearTimeout(connectTimer)
     if (connection !== conn) return
     connection = null
     onPeerLeft('对方已离开聊天')
   })
   conn.on('error', () => {
+    clearTimeout(connectTimer)
     if (connection === conn && !conn.open) {
       connection = null
       showDisconnectedState('加入失败，请重试')
